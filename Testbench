@@ -1,0 +1,116 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 09.08.2024 23:39:23
+// Design Name: 
+// Module Name: Testbench
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+module Testbench;
+    parameter DWIDTH = 32;
+    parameter AWIDTH = 4;
+
+    reg clk, rst, TEST, rd_en, wr_en, memrst;
+    reg [AWIDTH-1:0] wr_addr, rd_addr;
+    reg [DWIDTH-1:0] data_in;
+    wire bist_status, bist_check_valid;
+
+    // Instantiate the MBIST architecture module
+    MBIST_Architecture UUT (
+        .clk(clk),
+        .rst(rst),
+        .memrst(memrst),
+        .TEST(TEST),
+        .rd_en(rd_en),
+        .wr_en(wr_en),
+        .wr_addr(wr_addr),
+        .rd_addr(rd_addr),
+        .data_in(data_in),
+        .bist_status(bist_status),
+        .bist_check_valid(bist_check_valid)
+    );
+
+    // Clock Generation
+    initial
+    begin
+        clk = 0;
+        forever #10 clk = ~clk; // Clock period of 20 time units
+    end
+
+    // Test Stimulus
+    initial
+    begin
+        // Initialize inputs
+        rst = 1;
+        TEST = 0;
+        rd_en = 0;
+        wr_en = 0;
+        memrst = 0;
+        wr_addr = 0;
+        rd_addr = 0;
+        data_in = 0;
+
+        // Release reset
+        #20;
+        rst = 0;
+
+        // Start BIST test
+        #20;
+        TEST = 1;
+        wr_en = 1;
+        data_in = 32'hFFFFFFFF; // Write all 1's
+        wr_addr = 4'b0000;
+        
+        // Write to memory
+        #20;
+        wr_addr = 4'b0001;
+        #20;
+        wr_en = 0;
+        rd_en = 1;
+        rd_addr = 4'b0000;
+
+        // Read from memory
+        #20;
+        rd_addr = 4'b0001;
+
+        // Finish BIST
+        #20;
+        TEST = 0;
+        memrst = 1;
+
+        // Reset memory and finish test
+        #20;
+        memrst = 0;
+        rst = 1;
+        #20;
+        rst = 0;
+        #20;
+
+        $finish;
+    end
+
+    // Monitor signals
+    initial
+    begin
+        $monitor("Time: %0t | clk: %b | rst: %b | TEST: %b | rd_en: %b | wr_en: %b | memrst: %b | wr_addr: %b | rd_addr: %b | data_in: %x | bist_status: %b | bist_check_valid: %b",
+            $time, clk, rst, TEST, rd_en, wr_en, memrst, wr_addr, rd_addr, data_in, bist_status, bist_check_valid);
+    end
+
+endmodule
+
+
+
+
+
